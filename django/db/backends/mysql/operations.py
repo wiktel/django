@@ -436,6 +436,7 @@ class DatabaseOperations(BaseDatabaseOperations):
     def on_conflict_suffix_sql(self, fields, on_conflict, update_fields, unique_fields):
         if on_conflict == OnConflict.UPDATE:
             conflict_suffix_sql = "ON DUPLICATE KEY UPDATE %(fields)s"
+            field_sql = "%(field)s = VALUES(%(field)s)"
             # The use of VALUES() is deprecated in MySQL 8.0.20+. Instead, use
             # aliases for the new row and its columns available in MySQL
             # 8.0.19+.
@@ -443,10 +444,8 @@ class DatabaseOperations(BaseDatabaseOperations):
                 if self.connection.mysql_version >= (8, 0, 19):
                     conflict_suffix_sql = f"AS new {conflict_suffix_sql}"
                     field_sql = "%(field)s = new.%(field)s"
-                else:
-                    field_sql = "%(field)s = VALUES(%(field)s)"
-            # Use VALUE() on MariaDB.
-            else:
+            # VALUES() was renamed to VALUE() in MariaDB 10.3.3+.
+            elif self.connection.mysql_version >= (10, 3, 3):
                 field_sql = "%(field)s = VALUE(%(field)s)"
 
             fields = ", ".join(

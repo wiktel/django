@@ -57,9 +57,17 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     @cached_property
     def minimum_database_version(self):
         if self.connection.mysql_is_mariadb:
-            return (10, 4)
+            return (10, 3)
         else:
             return (8,)
+
+    @cached_property
+    def bare_select_suffix(self):
+        if (
+            self.connection.mysql_is_mariadb and self.connection.mysql_version < (10, 4)
+        ):
+            return " FROM DUAL"
+        return ""
 
     @cached_property
     def test_collations(self):
@@ -265,7 +273,8 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     @cached_property
     def can_introspect_check_constraints(self):
         if self.connection.mysql_is_mariadb:
-            return True
+            version = self.connection.mysql_version
+            return version >= (10, 3, 10)
         return self.connection.mysql_version >= (8, 0, 16)
 
     @cached_property
